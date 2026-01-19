@@ -14,6 +14,10 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+if (typeof window !== "undefined") {
+  console.log("Firebase Config:", firebaseConfig);
+}
+
 // Check if Firebase config is available (might not be during build/prerender)
 const isConfigured = Boolean(
   firebaseConfig.apiKey && 
@@ -42,7 +46,11 @@ export const auth: Auth = new Proxy({} as Auth, {
     if (!authInstance) {
       authInstance = getAuth(getFirebaseApp());
     }
-    return Reflect.get(authInstance, prop);
+    const value = Reflect.get(authInstance, prop);
+    if (typeof value === "function") {
+      return value.bind(authInstance);
+    }
+    return value;
   }
 });
 
@@ -52,7 +60,11 @@ export const db: Firestore = new Proxy({} as Firestore, {
     if (!dbInstance) {
       dbInstance = getFirestore(getFirebaseApp());
     }
-    return Reflect.get(dbInstance, prop);
+    const value = Reflect.get(dbInstance, prop);
+    if (typeof value === "function") {
+      return value.bind(dbInstance);
+    }
+    return value;
   }
 });
 
