@@ -1,6 +1,6 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+import { getAuth, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
 
 /**
  * Firebase client-side configuration
@@ -14,9 +14,46 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase (avoid re-initialization in development with hot reload)
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+// Check if Firebase config is available (might not be during build/prerender)
+const isConfigured = Boolean(
+  firebaseConfig.apiKey && 
+  firebaseConfig.projectId &&
+  typeof window !== "undefined" // Only initialize in browser
+);
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+let app: FirebaseApp | undefined;
+let authInstance: Auth | undefined;
+let dbInstance: Firestore | undefined;
+
+// Lazy initialize Firebase app
+function getFirebaseApp(): FirebaseApp {
+  if (!app) {
+    if (!isConfigured) {
+      throw new Error("Firebase is not configured");
+    }
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+  }
+  return app;
+}
+
+// Export auth with lazy initialization
+export const auth: Auth = new Proxy({} as Auth, {
+  get(_, prop) {
+    if (!authInstance) {
+      authInstance = getAuth(getFirebaseApp());
+    }
+    return Reflect.get(authInstance, prop);
+  }
+});
+
+// Export db with lazy initialization  
+export const db: Firestore = new Proxy({} as Firestore, {
+  get(_, prop) {
+    if (!dbInstance) {
+      dbInstance = getFirestore(getFirebaseApp());
+    }
+    return Reflect.get(dbInstance, prop);
+  }
+});
+
 export default app;
