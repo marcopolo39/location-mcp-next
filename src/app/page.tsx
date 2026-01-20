@@ -212,7 +212,7 @@ function ApiKeyGenerator() {
               <br />
               <span className="text-purple-400">Server URL:</span>{" "}
               <code className="bg-black/30 px-2 py-0.5 rounded text-xs">
-                https://your-domain.com/api/mcp
+                https://vectrmcp.com/api/mcp
               </code>
               <br />
               <span className="text-purple-400">X-API-Key:</span> Your generated
@@ -225,7 +225,7 @@ function ApiKeyGenerator() {
               2. Send Location (React Native)
             </h4>
             <pre className="mt-2 p-3 bg-black/30 rounded text-xs overflow-x-auto">
-              {`fetch('/api/location', {
+              {`fetch('https://vectrmcp.com/api/location', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -266,7 +266,7 @@ export default function Home() {
             VectrMCP
           </h1>
           <p className="text-xl text-purple-200 max-w-2xl mx-auto">
-            Your physical location, grounded in AI. Sign in to get
+            Share your location with AI assistants like Poke. Sign in to get
             started.
           </p>
         </header>
