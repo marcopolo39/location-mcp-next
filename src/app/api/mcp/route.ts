@@ -6,11 +6,29 @@ import { validateApiKey } from "@/lib/supabase-service";
 // Store active sessions per user
 const sessions = new Map<string, { transport: StreamableHTTPServerTransport }>();
 
+// CORS headers helper
+function getCorsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS, DELETE",
+    "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Authorization",
+    "Access-Control-Max-Age": "86400",
+  };
+}
+
 /**
  * Handle MCP protocol requests
  * Supports GET, POST, DELETE methods as per Streamable HTTP transport spec
  */
 async function handleMcpRequest(request: NextRequest) {
+  // Handle OPTIONS preflight
+  if (request.method === "OPTIONS") {
+    return new NextResponse(null, {
+      status: 204,
+      headers: getCorsHeaders(),
+    });
+  }
+
   // Get API key from header or query parameter
   const apiKey = request.headers.get("x-api-key") || 
                  request.nextUrl.searchParams.get("apiKey");
@@ -18,7 +36,10 @@ async function handleMcpRequest(request: NextRequest) {
   if (!apiKey) {
     return NextResponse.json(
       { error: "Unauthorized", message: "API key required. Pass as X-API-Key header or apiKey query parameter." },
-      { status: 401 }
+      { 
+        status: 401,
+        headers: getCorsHeaders()
+      }
     );
   }
 
@@ -26,7 +47,10 @@ async function handleMcpRequest(request: NextRequest) {
   if (!userId) {
     return NextResponse.json(
       { error: "Unauthorized", message: "Invalid API key" },
-      { status: 401 }
+      { 
+        status: 401,
+        headers: getCorsHeaders()
+      }
     );
   }
 
@@ -53,7 +77,9 @@ async function handleMcpRequest(request: NextRequest) {
     
     // Create a custom response handler
     return new Promise<NextResponse>((resolve) => {
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = {
+        ...getCorsHeaders()
+      };
       let statusCode = 200;
       let responseBody = "";
       let isSSE = false;
@@ -116,6 +142,7 @@ async function handleMcpRequest(request: NextRequest) {
         resolve(new NextResponse(stream, {
           status: 200,
           headers: {
+            ...headers,
             "Content-Type": "text/event-stream",
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
@@ -129,7 +156,10 @@ async function handleMcpRequest(request: NextRequest) {
     console.error("[MCP] Error handling request:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: getCorsHeaders()
+      }
     );
   }
 }
@@ -145,3 +175,11 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   return handleMcpRequest(request);
 }
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: getCorsHeaders(),
+  });
+}
+
