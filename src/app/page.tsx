@@ -263,10 +263,10 @@ export default function Home() {
         {/* Hero Section */}
         <header className="text-center mb-16">
           <h1 className="text-5xl font-bold text-white mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-300 to-purple-500">
-            Location MCP Server
+            VectrMCP
           </h1>
           <p className="text-xl text-purple-200 max-w-2xl mx-auto">
-            Share your location with AI assistants like Poke. Sign in to get
+            Your physical location, grounded in AI. Sign in to get
             started.
           </p>
         </header>

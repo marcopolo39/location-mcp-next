@@ -9,7 +9,7 @@ import { getLocation } from "./supabase-service";
  */
 export function createMcpServer(userId: string): McpServer {
   const server = new McpServer({
-    name: "location-mcp",
+    name: "vectr-mcp",
     version: "1.0.0",
   });
 

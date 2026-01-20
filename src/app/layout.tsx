@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Location MCP Server",
+  title: "VectrMCP",
   description: "Share your location with AI assistants",
 };
 
