@@ -1,37 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createMcpServer } from "@/lib/mcp-server";
 import { validateApiKey } from "@/lib/supabase-service";
-
-// Store active sessions per user
-const sessions = new Map<string, { transport: StreamableHTTPServerTransport }>();
 
 // CORS headers helper
 function getCorsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS, DELETE",
-    "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Authorization",
+    "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Authorization, MCP-Session-Id, MCP-Protocol-Version, Accept",
+    "Access-Control-Expose-Headers": "MCP-Session-Id",
     "Access-Control-Max-Age": "86400",
   };
 }
 
 /**
- * Handle MCP protocol requests
- * Supports GET, POST, DELETE methods as per Streamable HTTP transport spec
+ * Handle MCP protocol requests using Web Standard Streamable HTTP transport
+ * Uses stateless mode for serverless compatibility
  */
 async function handleMcpRequest(request: NextRequest) {
-  // Handle OPTIONS preflight
-  if (request.method === "OPTIONS") {
-    return new NextResponse(null, {
-      status: 204,
-      headers: getCorsHeaders(),
-    });
-  }
-
-  // Get API key from header or query parameter
+  // Get API key from header or query parameter (check multiple variations)
   const apiKey = request.headers.get("x-api-key") || 
-                 request.nextUrl.searchParams.get("apiKey");
+                 request.headers.get("X-API-Key") ||
+                 request.headers.get("authorization")?.replace("Bearer ", "") ||
+                 request.nextUrl.searchParams.get("apiKey") ||
+                 request.nextUrl.searchParams.get("api_key");
   
   if (!apiKey) {
     return NextResponse.json(
@@ -54,108 +47,43 @@ async function handleMcpRequest(request: NextRequest) {
     );
   }
 
-  console.log(`[MCP] ${request.method} request for user: ${userId}`);
-
-  // Get or create session for this user
-  let session = sessions.get(userId);
-  
-  if (!session) {
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => crypto.randomUUID(),
-    });
-    const server = createMcpServer(userId);
-    server.connect(transport);
-    
-    session = { transport };
-    sessions.set(userId, session);
-    console.log(`[MCP] New session created for user: ${userId}`);
-  }
-
   try {
-    // Convert Next.js request to Node.js-like request for the transport
-    const body = request.method === "POST" ? await request.json() : undefined;
+    // Create a new stateless transport for each request (serverless-compatible)
+    const transport = new WebStandardStreamableHTTPServerTransport({
+      // Stateless mode - no session ID generation
+      sessionIdGenerator: undefined,
+      enableJsonResponse: true,
+    });
     
-    // Create a custom response handler
-    return new Promise<NextResponse>((resolve) => {
-      const headers: Record<string, string> = {
-        ...getCorsHeaders()
-      };
-      let statusCode = 200;
-      let responseBody = "";
-      let isSSE = false;
-      let sseController: ReadableStreamDefaultController<Uint8Array> | null = null;
+    // Create and connect the MCP server
+    const server = createMcpServer(userId);
+    await server.connect(transport);
 
-      // Mock response object for the transport
-      const mockRes = {
-        setHeader: (name: string, value: string) => {
-          headers[name.toLowerCase()] = value;
-          if (name.toLowerCase() === "content-type" && value.includes("text/event-stream")) {
-            isSSE = true;
-          }
-        },
-        writeHead: (code: number, hdrs?: Record<string, string>) => {
-          statusCode = code;
-          if (hdrs) {
-            Object.entries(hdrs).forEach(([k, v]) => {
-              headers[k.toLowerCase()] = v;
-            });
-          }
-        },
-        write: (chunk: string) => {
-          if (isSSE && sseController) {
-            sseController.enqueue(new TextEncoder().encode(chunk));
-          } else {
-            responseBody += chunk;
-          }
-        },
-        end: (chunk?: string) => {
-          if (chunk) responseBody += chunk;
-          if (isSSE && sseController) {
-            sseController.close();
-          } else {
-            resolve(new NextResponse(responseBody, {
-              status: statusCode,
-              headers,
-            }));
-          }
-        },
-        headersSent: false,
-      };
+    // Convert NextRequest to standard Request for the transport
+    const webRequest = new Request(request.url, {
+      method: request.method,
+      headers: request.headers,
+      body: request.method !== "GET" && request.method !== "HEAD" ? await request.blob() : undefined,
+    });
 
-      // Mock request object
-      const mockReq = {
-        method: request.method,
-        headers: Object.fromEntries(request.headers.entries()),
-        body,
-        query: Object.fromEntries(request.nextUrl.searchParams.entries()),
-      };
+    // Handle the request using the Web Standard transport
+    const response = await transport.handleRequest(webRequest);
+    
+    // Add CORS headers to the response
+    const headers = new Headers(response.headers);
+    Object.entries(getCorsHeaders()).forEach(([key, value]) => {
+      headers.set(key, value);
+    });
 
-      if (request.method === "GET") {
-        // SSE stream for GET requests
-        const stream = new ReadableStream({
-          start(controller) {
-            sseController = controller;
-            session!.transport.handleRequest(mockReq as never, mockRes as never, body);
-          },
-        });
-        
-        resolve(new NextResponse(stream, {
-          status: 200,
-          headers: {
-            ...headers,
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-          },
-        }));
-      } else {
-        session!.transport.handleRequest(mockReq as never, mockRes as never, body);
-      }
+    return new NextResponse(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
     });
   } catch (error) {
     console.error("[MCP] Error handling request:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
       { 
         status: 500,
         headers: getCorsHeaders()
@@ -182,4 +110,3 @@ export async function OPTIONS() {
     headers: getCorsHeaders(),
   });
 }
-
