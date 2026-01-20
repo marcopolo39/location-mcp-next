@@ -30,7 +30,7 @@ function AuthForm() {
 
   return (
     <div className="max-w-md mx-auto">
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-2xl">
+      <div className="bg-white/5 backdrop-blur-2xl rounded-2xl p-8 border border-white/20 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
         <h2 className="text-2xl font-semibold text-white mb-6 text-center">
           Sign In
         </h2>
@@ -42,7 +42,7 @@ function AuthForm() {
         <button
           onClick={handleGoogleSignIn}
           disabled={loading}
-          className="w-full py-3 px-6 bg-white text-gray-800 font-semibold rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+          className="w-full py-3 px-6 bg-white text-gray-800 font-semibold rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -121,7 +121,7 @@ function ApiKeyGenerator() {
   return (
     <div className="max-w-lg mx-auto">
       {/* User Info Bar */}
-      <div className="flex items-center justify-between mb-6 p-4 bg-white/5 rounded-lg border border-white/10">
+      <div className="flex items-center justify-between mb-6 p-4 bg-white/5 backdrop-blur-xl rounded-lg border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
         <div className="flex items-center gap-3">
           {user?.user_metadata?.avatar_url && (
             <img
@@ -130,7 +130,7 @@ function ApiKeyGenerator() {
               className="w-8 h-8 rounded-full"
             />
           )}
-          <span className="text-purple-200 text-sm">
+          <span className="text-emerald-200 text-sm">
             <span className="text-white font-medium">
               {user?.user_metadata?.full_name || user?.email}
             </span>
@@ -138,14 +138,14 @@ function ApiKeyGenerator() {
         </div>
         <button
           onClick={signOut}
-          className="text-sm text-purple-400 hover:text-purple-300 underline"
+          className="text-sm text-emerald-400 hover:text-emerald-300 underline"
         >
           Sign Out
         </button>
       </div>
 
       {/* API Key Generator Card */}
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-2xl">
+      <div className="bg-white/5 backdrop-blur-2xl rounded-2xl p-8 border border-white/20 shadow-[0_0_40px_rgba(16,185,129,0.15)]">
         <h2 className="text-2xl font-semibold text-white mb-6">
           Generate API Key
         </h2>
@@ -154,7 +154,7 @@ function ApiKeyGenerator() {
           <div>
             <label
               htmlFor="keyName"
-              className="block text-sm font-medium text-purple-200 mb-2"
+              className="block text-sm font-medium text-emerald-200 mb-2"
             >
               Key Name (optional)
             </label>
@@ -164,7 +164,7 @@ function ApiKeyGenerator() {
               value={keyName}
               onChange={(e) => setKeyName(e.target.value)}
               placeholder="e.g., My Phone"
-              className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+              className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
             />
           </div>
 
@@ -173,7 +173,7 @@ function ApiKeyGenerator() {
           <button
             onClick={generateKey}
             disabled={loading}
-            className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 px-6 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-lg hover:from-emerald-700 hover:to-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Generating..." : "Generate API Key"}
           </button>
@@ -201,21 +201,21 @@ function ApiKeyGenerator() {
       </div>
 
       {/* Instructions */}
-      <div className="mt-8 bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10">
+      <div className="mt-8 bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.05)]">
         <h3 className="text-xl font-semibold text-white mb-4">How to Use</h3>
 
-        <div className="space-y-4 text-purple-200">
+        <div className="space-y-4 text-emerald-200">
           <div>
             <h4 className="font-medium text-white">1. Add to Poke</h4>
             <p className="text-sm mt-1">
               Go to Poke Settings → Add MCP Server
               <br />
-              <span className="text-purple-400">Server URL:</span>{" "}
+              <span className="text-emerald-400">Server URL:</span>{" "}
               <code className="bg-black/30 px-2 py-0.5 rounded text-xs">
                 https://vectrmcp.com/api/mcp
               </code>
               <br />
-              <span className="text-purple-400">X-API-Key:</span> Your generated
+              <span className="text-emerald-400">X-API-Key:</span> Your generated
               API key
             </p>
           </div>
@@ -258,14 +258,14 @@ export default function Home() {
   const { user, loading } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="container mx-auto px-4 py-16">
+    <div className="min-h-screen bg-[#070707] relative overflow-hidden">
+      <div className="relative z-10 container mx-auto px-4 py-16">
         {/* Hero Section */}
         <header className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-white mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-300 to-purple-500">
+          <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-500 mb-4">
             VectrMCP
           </h1>
-          <p className="text-xl text-purple-200 max-w-2xl mx-auto">
+          <p className="text-xl text-emerald-200 max-w-2xl mx-auto">
             Share your location with AI assistants like Poke. Sign in to get
             started.
           </p>
@@ -274,7 +274,7 @@ export default function Home() {
         {/* Loading State */}
         {loading && (
           <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
           </div>
         )}
 
