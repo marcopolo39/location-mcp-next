@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateApiKey, setLocation, getLocation } from "@/lib/firebase-service";
+import { validateApiKey, setLocation, getLocation } from "@/lib/supabase-service";
 import type { LocationUpdate } from "@/lib/types";
 
 /**

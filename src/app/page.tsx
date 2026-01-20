@@ -70,7 +70,7 @@ function AuthForm() {
 }
 
 function ApiKeyGenerator() {
-  const { user, signOut } = useAuth();
+  const { user, session, signOut } = useAuth();
   const [keyName, setKeyName] = useState("");
   const [generatedKey, setGeneratedKey] = useState<GeneratedKey | null>(null);
   const [error, setError] = useState("");
@@ -78,19 +78,19 @@ function ApiKeyGenerator() {
   const [copied, setCopied] = useState(false);
 
   const generateKey = async () => {
-    if (!user) return;
+    if (!user || !session) return;
 
     setLoading(true);
     setError("");
 
     try {
-      const idToken = await user.getIdToken();
+      const accessToken = session.access_token;
 
       const res = await fetch("/api/keys", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ name: keyName.trim() || undefined }),
       });
@@ -123,16 +123,16 @@ function ApiKeyGenerator() {
       {/* User Info Bar */}
       <div className="flex items-center justify-between mb-6 p-4 bg-white/5 rounded-lg border border-white/10">
         <div className="flex items-center gap-3">
-          {user?.photoURL && (
+          {user?.user_metadata?.avatar_url && (
             <img
-              src={user.photoURL}
+              src={user.user_metadata.avatar_url}
               alt=""
               className="w-8 h-8 rounded-full"
             />
           )}
           <span className="text-purple-200 text-sm">
             <span className="text-white font-medium">
-              {user?.displayName || user?.email}
+              {user?.user_metadata?.full_name || user?.email}
             </span>
           </span>
         </div>

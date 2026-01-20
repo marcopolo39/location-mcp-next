@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminAuth } from "@/lib/firebase-admin";
-import { createApiKey } from "@/lib/firebase-service";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { createApiKey } from "@/lib/supabase-service";
 
 /**
  * POST /api/keys - Generate a new API key
- * Requires Firebase Auth token in Authorization header
+ * Requires Supabase Auth token in Authorization header
  * Body: { name?: string }
  */
 export async function POST(request: NextRequest) {
   try {
-    // Get Firebase ID token from Authorization header
+    // Get access token from Authorization header
     const authHeader = request.headers.get("authorization");
     
     if (!authHeader?.startsWith("Bearer ")) {
@@ -19,20 +19,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const idToken = authHeader.slice(7);
+    const accessToken = authHeader.slice(7);
     
-    // Verify the Firebase ID token
-    let decodedToken;
-    try {
-      decodedToken = await getAdminAuth().verifyIdToken(idToken);
-    } catch {
+    // Verify the Supabase access token
+    const supabase = getSupabaseAdmin();
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    
+    if (error || !user) {
       return NextResponse.json(
         { error: "Unauthorized", message: "Invalid or expired token" },
         { status: 401 }
       );
     }
 
-    const userId = decodedToken.uid;
+    const userId = user.id;
     
     // Parse request body
     const body = await request.json();

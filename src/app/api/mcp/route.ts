@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createMcpServer } from "@/lib/mcp-server";
-import { validateApiKey } from "@/lib/firebase-service";
+import { validateApiKey } from "@/lib/supabase-service";
 
 // Store active sessions per user
 const sessions = new Map<string, { transport: StreamableHTTPServerTransport }>();

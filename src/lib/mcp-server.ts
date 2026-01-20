@@ -1,5 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { getLocation } from "./firebase-service";
+import { getLocation } from "./supabase-service";
 
 /**
  * Create and configure an MCP server for a specific user.
