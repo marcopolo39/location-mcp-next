@@ -87,12 +87,29 @@ export async function removeLocation(userId: string): Promise<boolean> {
   return (count ?? 0) > 0;
 }
 
+const MAX_KEYS_PER_USER = 3;
+
 /**
  * Create a new API key for a user
  * Returns the full raw key (only shown once) along with stored metadata
+ * Limited to MAX_KEYS_PER_USER keys per user
  */
 export async function createApiKey(userId: string, name?: string): Promise<ApiKeyWithSecret> {
   const supabase = getSupabaseAdmin();
+  
+  // Check if user has reached the key limit
+  const { count, error: countError } = await supabase
+    .from("api_keys")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId);
+  
+  if (countError) {
+    throw new Error(`Failed to check key count: ${countError.message}`);
+  }
+  
+  if ((count ?? 0) >= MAX_KEYS_PER_USER) {
+    throw new Error(`Maximum of ${MAX_KEYS_PER_USER} API keys allowed. Please delete an existing key first.`);
+  }
   
   // Generate a new random UUID as the raw key
   const rawKey = randomUUID();
