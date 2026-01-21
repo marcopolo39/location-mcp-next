@@ -185,9 +185,6 @@ function ApiKeyGenerator() {
             <p className="text-green-400 text-sm font-medium mb-2">
               ✓ API Key Generated!
             </p>
-            <p className="text-amber-400 text-xs mb-3">
-              ⚠️ Save this key now - it won&apos;t be shown again!
-            </p>
             <div className="flex items-center gap-2">
               <code className="flex-1 bg-black/30 px-3 py-2 rounded text-sm text-white font-mono break-all">
                 {generatedKey.key}
@@ -199,6 +196,9 @@ function ApiKeyGenerator() {
                 {copied ? "Copied!" : "Copy"}
               </button>
             </div>
+            <p className="text-red-400 text-xs font-semibold mt-3">
+              Save this key now - it won&apos;t be shown again!
+            </p>
           </div>
         )}
       </div>
