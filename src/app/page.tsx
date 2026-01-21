@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
 
 interface GeneratedKey {
@@ -240,27 +241,35 @@ function ApiKeyGenerator() {
         </div>
 
         {/* Generated Key Display */}
-        {generatedKey && (
-          <div className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-            <p className="text-green-400 text-sm font-medium mb-2">
-              ✓ API Key Generated!
-            </p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 bg-black/30 px-3 py-2 rounded text-sm text-white font-mono break-all">
-                {generatedKey.key}
-              </code>
-              <button
-                onClick={copyToClipboard}
-                className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded text-sm text-white transition"
-              >
-                {copied ? "Copied!" : "Copy"}
-              </button>
-            </div>
-            <p className="text-red-400 text-xs font-semibold mt-3">
-              Save this key now - it won&apos;t be shown again!
-            </p>
-          </div>
-        )}
+        <AnimatePresence>
+          {generatedKey && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.25 }}
+              className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg"
+            >
+              <p className="text-green-400 text-sm font-medium mb-2">
+                ✓ API Key Generated!
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-black/30 px-3 py-2 rounded text-sm text-white font-mono break-all">
+                  {generatedKey.key}
+                </code>
+                <button
+                  onClick={copyToClipboard}
+                  className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded text-sm text-white transition"
+                >
+                  {copied ? "Copied!" : "Copy"}
+                </button>
+              </div>
+              <p className="text-red-400 text-xs font-semibold mt-3">
+                Save this key now - it won&apos;t be shown again!
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Manage Keys - Collapsible */}
         {existingKeys.length > 0 && (
@@ -282,39 +291,58 @@ function ApiKeyGenerator() {
               </svg>
             </button>
             
-            {keysExpanded && (
-              <div className="mt-3 space-y-2">
-                {existingKeys.map((key) => (
-                  <div
-                    key={key.id}
-                    className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <code className="text-xs text-white/60 font-mono">
-                          {key.keyPrefix}...
-                        </code>
-                        {key.name && (
-                          <span className="text-sm text-white truncate">
-                            {key.name}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-white/40 mt-1">
-                        Created {new Date(key.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => deleteKey(key.id)}
-                      disabled={deletingKeyId === key.id}
-                      className="ml-2 px-2 py-1 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition disabled:opacity-50"
-                    >
-                      {deletingKeyId === key.id ? "..." : "Delete"}
-                    </button>
+            <AnimatePresence>
+              {keysExpanded && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-3 space-y-2">
+                    <AnimatePresence>
+                      {existingKeys.map((key, index) => (
+                        <motion.div
+                          key={key.id}
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          transition={{ 
+                            duration: 0.3,
+                            delay: index * 0.05 
+                          }}
+                          className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <code className="text-xs text-white/60 font-mono">
+                                {key.keyPrefix}...
+                              </code>
+                              {key.name && (
+                                <span className="text-sm text-white truncate">
+                                  {key.name}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-white/40 mt-1">
+                              Created {new Date(key.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => deleteKey(key.id)}
+                            disabled={deletingKeyId === key.id}
+                            className="ml-2 px-2 py-1 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition disabled:opacity-50"
+                          >
+                            {deletingKeyId === key.id ? "..." : "Delete"}
+                          </button>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
                   </div>
-                ))}
-              </div>
-            )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </div>
