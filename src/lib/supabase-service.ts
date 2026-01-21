@@ -1,5 +1,13 @@
 import { getSupabaseAdmin } from "./supabase-admin";
-import type { UserLocation, ApiKey } from "./types";
+import type { UserLocation, ApiKey, ApiKeyWithSecret } from "./types";
+import { createHash, randomUUID } from "crypto";
+
+/**
+ * Hash an API key using SHA-256
+ */
+function hashApiKey(key: string): string {
+  return createHash("sha256").update(key).digest("hex");
+}
 
 /**
  * Supabase service for server-side database operations
@@ -81,13 +89,22 @@ export async function removeLocation(userId: string): Promise<boolean> {
 
 /**
  * Create a new API key for a user
+ * Returns the full raw key (only shown once) along with stored metadata
  */
-export async function createApiKey(userId: string, name?: string): Promise<ApiKey> {
+export async function createApiKey(userId: string, name?: string): Promise<ApiKeyWithSecret> {
   const supabase = getSupabaseAdmin();
+  
+  // Generate a new random UUID as the raw key
+  const rawKey = randomUUID();
+  const keyHash = hashApiKey(rawKey);
+  const keyPrefix = rawKey.substring(0, 8);
+
   const { data, error } = await supabase
     .from("api_keys")
     .insert({
       user_id: userId,
+      key_hash: keyHash,
+      key_prefix: keyPrefix,
       name: name || null,
     })
     .select()
@@ -98,10 +115,12 @@ export async function createApiKey(userId: string, name?: string): Promise<ApiKe
   }
 
   return {
-    key: data.key,
+    id: data.id,
+    keyPrefix: data.key_prefix,
     userId: data.user_id,
     createdAt: data.created_at,
     name: data.name ?? undefined,
+    rawKey, // Only returned at creation time
   };
 }
 
@@ -110,10 +129,12 @@ export async function createApiKey(userId: string, name?: string): Promise<ApiKe
  */
 export async function validateApiKey(key: string): Promise<string | null> {
   const supabase = getSupabaseAdmin();
+  const keyHash = hashApiKey(key);
+  
   const { data, error } = await supabase
     .from("api_keys")
     .select("user_id")
-    .eq("key", key)
+    .eq("key_hash", keyHash)
     .single();
 
   if (error) {
@@ -128,12 +149,13 @@ export async function validateApiKey(key: string): Promise<string | null> {
 
 /**
  * Get all API keys for a user
+ * Note: Only returns key prefixes, not the full keys (they are never stored)
  */
 export async function getKeysForUser(userId: string): Promise<ApiKey[]> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("api_keys")
-    .select("*")
+    .select("id, key_prefix, user_id, created_at, name")
     .eq("user_id", userId);
 
   if (error) {
@@ -141,7 +163,8 @@ export async function getKeysForUser(userId: string): Promise<ApiKey[]> {
   }
 
   return data.map((row) => ({
-    key: row.key,
+    id: row.id,
+    keyPrefix: row.key_prefix,
     userId: row.user_id,
     createdAt: row.created_at,
     name: row.name ?? undefined,
@@ -149,14 +172,14 @@ export async function getKeysForUser(userId: string): Promise<ApiKey[]> {
 }
 
 /**
- * Delete an API key
+ * Delete an API key by its id
  */
-export async function deleteApiKey(key: string): Promise<boolean> {
+export async function deleteApiKey(id: string): Promise<boolean> {
   const supabase = getSupabaseAdmin();
   const { error, count } = await supabase
     .from("api_keys")
     .delete({ count: "exact" })
-    .eq("key", key);
+    .eq("id", id);
 
   if (error) {
     throw new Error(`Failed to delete API key: ${error.message}`);
@@ -164,3 +187,4 @@ export async function deleteApiKey(key: string): Promise<boolean> {
 
   return (count ?? 0) > 0;
 }
+

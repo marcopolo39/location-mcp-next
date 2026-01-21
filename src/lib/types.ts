@@ -20,10 +20,19 @@ export interface LocationUpdate {
 
 /**
  * API Key for authentication
+ * Note: The full key is only returned once at creation time
  */
 export interface ApiKey {
-  key: string;
+  id: string;
+  keyPrefix: string; // First 8 chars of the key for display
   userId: string;
   createdAt: string;
   name?: string;
+}
+
+/**
+ * API Key with the full raw key (only returned at creation)
+ */
+export interface ApiKeyWithSecret extends ApiKey {
+  rawKey: string; // The full key - only available at creation
 }

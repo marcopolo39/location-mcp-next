@@ -23,9 +23,9 @@ export async function POST(request: NextRequest) {
     
     // Verify the Supabase access token
     const supabase = getSupabaseAdmin();
-    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     
-    if (error || !user) {
+    if (authError || !user) {
       return NextResponse.json(
         { error: "Unauthorized", message: "Invalid or expired token" },
         { status: 401 }
@@ -35,8 +35,13 @@ export async function POST(request: NextRequest) {
     const userId = user.id;
     
     // Parse request body
-    const body = await request.json();
-    const { name } = body;
+    let name: string | undefined;
+    try {
+      const body = await request.json();
+      name = body.name;
+    } catch {
+      // Empty body is fine, name is optional
+    }
 
     const apiKey = await createApiKey(userId, name);
 
@@ -44,16 +49,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       apiKey: {
-        key: apiKey.key,
+        id: apiKey.id,
+        key: apiKey.rawKey, // Return the raw key to the UI (only shown once)
+        keyPrefix: apiKey.keyPrefix,
         userId: apiKey.userId,
         name: apiKey.name,
         createdAt: apiKey.createdAt,
       }
     });
-  } catch {
+  } catch (error) {
+    console.error("[API] Error creating API key:", error);
     return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 }
+      { error: "Failed to create API key", message: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 }
     );
   }
 }
