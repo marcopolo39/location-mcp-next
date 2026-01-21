@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 
 interface GeneratedKey {
   key: string;
+  userId: string;
+  name?: string;
+  createdAt: string;
+}
+
+interface StoredKey {
+  id: string;
+  keyPrefix: string;
   userId: string;
   name?: string;
   createdAt: string;
@@ -73,9 +81,56 @@ function ApiKeyGenerator() {
   const { user, session, signOut } = useAuth();
   const [keyName, setKeyName] = useState("");
   const [generatedKey, setGeneratedKey] = useState<GeneratedKey | null>(null);
+  const [existingKeys, setExistingKeys] = useState<StoredKey[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [keysExpanded, setKeysExpanded] = useState(false);
+  const [deletingKeyId, setDeletingKeyId] = useState<string | null>(null);
+
+  // Fetch existing keys on mount
+  useEffect(() => {
+    if (session?.access_token) {
+      fetchKeys();
+    }
+  }, [session?.access_token]);
+
+  const fetchKeys = async () => {
+    if (!session) return;
+    try {
+      const res = await fetch("/api/keys", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setExistingKeys(data.keys);
+      }
+    } catch {
+      // Silently fail - keys will just not show
+    }
+  };
+
+  const deleteKey = async (id: string) => {
+    if (!session) return;
+    setDeletingKeyId(id);
+    try {
+      const res = await fetch("/api/keys", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        setExistingKeys((keys) => keys.filter((k) => k.id !== id));
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setDeletingKeyId(null);
+    }
+  };
 
   const generateKey = async () => {
     if (!user || !session) return;
@@ -103,6 +158,9 @@ function ApiKeyGenerator() {
       }
 
       setGeneratedKey(data.apiKey);
+      setKeyName("");
+      // Refresh existing keys list
+      fetchKeys();
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -130,7 +188,7 @@ function ApiKeyGenerator() {
               className="w-8 h-8 rounded-full"
             />
           )}
-          <span className="text-emerald-200 text-sm">
+          <span className="text-emerald-400 text-sm">
             <span className="text-white font-medium">
               {user?.user_metadata?.full_name || user?.email}
             </span>
@@ -154,7 +212,7 @@ function ApiKeyGenerator() {
           <div>
             <label
               htmlFor="keyName"
-              className="block text-sm font-medium text-emerald-200 mb-2"
+              className="block text-sm font-medium text-emerald-400 mb-2"
             >
               Key Name (optional)
             </label>
@@ -196,6 +254,65 @@ function ApiKeyGenerator() {
                 {copied ? "Copied!" : "Copy"}
               </button>
             </div>
+            <p className="text-red-400 text-xs font-semibold mt-3">
+              Save this key now - it won&apos;t be shown again!
+            </p>
+          </div>
+        )}
+
+        {/* Manage Keys - Collapsible */}
+        {existingKeys.length > 0 && (
+          <div className="mt-6 border-t border-white/10 pt-4">
+            <button
+              onClick={() => setKeysExpanded(!keysExpanded)}
+              className="flex items-center justify-between w-full text-left"
+            >
+              <span className="text-sm font-medium text-emerald-400">
+                Manage Keys ({existingKeys.length}/3)
+              </span>
+              <svg
+                className={`w-4 h-4 text-emerald-400 transition-transform ${keysExpanded ? "rotate-180" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {keysExpanded && (
+              <div className="mt-3 space-y-2">
+                {existingKeys.map((key) => (
+                  <div
+                    key={key.id}
+                    className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs text-white/60 font-mono">
+                          {key.keyPrefix}...
+                        </code>
+                        {key.name && (
+                          <span className="text-sm text-white truncate">
+                            {key.name}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-white/40 mt-1">
+                        Created {new Date(key.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => deleteKey(key.id)}
+                      disabled={deletingKeyId === key.id}
+                      className="ml-2 px-2 py-1 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition disabled:opacity-50"
+                    >
+                      {deletingKeyId === key.id ? "..." : "Delete"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -204,19 +321,18 @@ function ApiKeyGenerator() {
       <div className="mt-8 bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.05)]">
         <h3 className="text-xl font-semibold text-white mb-4">How to Use</h3>
 
-        <div className="space-y-4 text-emerald-200">
+        <div className="space-y-4 text-emerald-400">
           <div>
             <h4 className="font-medium text-white">1. Add to Poke</h4>
             <p className="text-sm mt-1">
-              Go to Poke Settings → Add MCP Server
+              <span className="text-emerald-400">Go to Poke Settings → </span><span className="text-emerald-200">Add MCP Server</span>
               <br />
-              <span className="text-emerald-400">Server URL:</span>{" "}
-              <code className="bg-black/30 px-2 py-0.5 rounded text-xs">
+              Server URL:
+              <code className="bg-black/30 px-2 py-0.5 rounded text-xs text-emerald-200">
                 https://vectrmcp.com/api/mcp
               </code>
               <br />
-              <span className="text-emerald-400">X-API-Key:</span> Your generated
-              API key
+              X-API-Key: <span className="text-emerald-200">Your generated API key</span>
             </p>
           </div>
 
@@ -224,7 +340,7 @@ function ApiKeyGenerator() {
             <h4 className="font-medium text-white">
               2. Send Location (React Native)
             </h4>
-            <pre className="mt-2 p-3 bg-black/30 rounded text-xs overflow-x-auto">
+            <pre className="mt-2 p-3 bg-black/30 rounded text-xs overflow-x-auto text-emerald-200">
               {`fetch('https://vectrmcp.com/api/location', {
   method: 'POST',
   headers: {
@@ -243,7 +359,7 @@ function ApiKeyGenerator() {
             <h4 className="font-medium text-white">3. Ask Poke</h4>
             <p className="text-sm mt-1">
               "Where am I right now?" — Poke will call{" "}
-              <code className="bg-black/30 px-2 py-0.5 rounded text-xs">
+              <code className="bg-black/30 px-2 py-0.5 rounded text-xs text-emerald-200">
                 get_my_location
               </code>
             </p>
@@ -262,11 +378,11 @@ export default function Home() {
       <div className="relative z-10 container mx-auto px-4 py-16">
         {/* Hero Section */}
         <header className="text-center mb-16">
-          <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-500 mb-4">
+          <h1 className="text-5xl font-bold text-emerald-500 mb-4">
             VectrMCP
           </h1>
-          <p className="text-xl text-emerald-200 max-w-2xl mx-auto">
-            Share your location with AI assistants like Poke. Sign in to get
+          <p className="text-xl text-emerald-400 max-w-2xl mx-auto">
+            Share your location with Poke. Sign in to get
             started.
           </p>
         </header>
