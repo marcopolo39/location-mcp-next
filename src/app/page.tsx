@@ -173,6 +173,8 @@ function ApiKeyGenerator() {
       await navigator.clipboard.writeText(generatedKey.key);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      // Hide the key 10 seconds after copying for security
+      setTimeout(() => setGeneratedKey(null), 1000);
     }
   };
 
