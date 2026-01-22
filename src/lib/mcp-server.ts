@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getLocation } from "./supabase-service";
+import { reverseGeocode } from "./geocode";
 
 /**
  * Create and configure an MCP server for a specific user.
@@ -46,12 +47,19 @@ export function createMcpServer(userId: string): McpServer {
         };
       }
 
+      // Enrich location with address
+      const addressData = await reverseGeocode(location.latitude, location.longitude);
+      const enrichedLocation = {
+        ...location,
+        address: addressData?.formattedAddress || null,
+      };
+
       return {
         contents: [
           {
             uri: "location://me",
             mimeType: "application/json",
-            text: JSON.stringify(location, null, 2),
+            text: JSON.stringify(enrichedLocation, null, 2),
           },
         ],
       };
@@ -84,11 +92,18 @@ export function createMcpServer(userId: string): McpServer {
         };
       }
 
+      // Enrich location with address
+      const addressData = await reverseGeocode(location.latitude, location.longitude);
+      const enrichedLocation = {
+        ...location,
+        address: addressData?.formattedAddress || null,
+      };
+
       return {
         content: [
           {
             type: "text" as const,
-            text: JSON.stringify(location, null, 2),
+            text: JSON.stringify(enrichedLocation, null, 2),
           },
         ],
       };
