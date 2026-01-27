@@ -31,6 +31,9 @@ export async function reverseGeocode(
 ): Promise<AddressComponents | null> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
+  console.log("[Geocode] Attempting reverse geocode for:", latitude, longitude);
+  console.log("[Geocode] API key set:", apiKey ? "yes (length: " + apiKey.length + ")" : "NO - MISSING!");
+
   if (!apiKey) {
     console.error("[Geocode] GOOGLE_MAPS_API_KEY environment variable not set");
     return null;
